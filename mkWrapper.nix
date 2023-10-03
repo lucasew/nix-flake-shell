@@ -10,10 +10,10 @@ let
     value = builtins.replaceStrings [ keyAndSep ] [ "" ] b;
     isKey = builtins.length splitted > 1;
   in if isKey then {
-    inputs = (a.inputs or {}) // { "${key}" = builtins.getFlake value; };
+    inputs = a.inputs // { "${key}" = builtins.getFlake value; };
   } else {
-    packages = (a.packages or []) ++ [ b ];
-  })) {inputs.nixpkgs = builtins.getFlake "nixpkgs";} args;
+    packages = a.packages ++ [ b ];
+  })) {inputs.nixpkgs = builtins.getFlake "nixpkgs"; packages = [];} args;
 
   getKey = root: key: root.${key} or (getKey (root.outputs or root.legacyPackages or root.packages or root.${system} or (throw "unknown key")) key);
 

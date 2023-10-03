@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+packageArgs=()
+shellArgs=()
+
+parseShellArgs=0
+
+packageList=$(mktemp)
+
+while [ $# -gt 0 ]; do
+    if [ "$1" == "--" ]; then
+        parseShellArgs=1
+        shift
+        continue
+    fi
+    if [ "$parseShellArgs" == 0 ]; then
+        echo "$1" >> $packageList
+    else
+        shellArgs+=("$1")
+    fi
+    shift
+done
+
+echo $packageList
+echo "with (builtins.getFlake \"$SCRIPT_DIR\");" >> $packageList.nix
+echo 'with lib.${builtins.currentSystem};' >> $packageList.nix
+
+cat << EOF >> $packageList.nix
+mkWrapper (builtins.filter (x: builtins.typeOf x == "string" && x != "") (builtins.split "\n" (builtins.readFile "$packageList")))
+EOF
+
+wrapper="$(nix-build $packageList.nix --no-out-link)" && $wrapper "${shellArgs[@]}"
+
