@@ -1,0 +1,10 @@
+#!/usr/bin/env nix -S run path:.
+#!nix-flake-shell prefix=python
+#!nix-flake-shell nixpkgs.python3Packages.numpy
+#!nix-flake-shell nixpkgs.python3Packages.matplotlib
+#!nix-flake-shell lib=github:nixos/nixpkgs.lib
+#! vim:ft=python
+
+import numpy as np
+from matplotlib import pyplot as plt
+print("\o/")

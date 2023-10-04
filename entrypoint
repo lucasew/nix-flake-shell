@@ -2,26 +2,50 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-packageArgs=()
 shellArgs=()
-
-parseShellArgs=0
 
 packageList=$(mktemp)
 
-while [ $# -gt 0 ]; do
-    if [ "$1" == "--" ]; then
-        parseShellArgs=1
-        shift
-        continue
-    fi
-    if [ "$parseShellArgs" == 0 ]; then
-        echo "$1" >> $packageList
-    else
+interpreter=bash # by default in shebang mode
+if [ $# -gt 0 ] && [ -x "$1" ]; then
+    script="$1"; shift
+    echo shebang mode
+
+    while read line; do
+        echo line: $line
+        if [ "${line:0:7}" == "prefix=" ]; then
+            interpreter="${line:7}"
+            echo interpreter alterado: $interpreter
+            continue
+        fi
+        echo $line >> $packageList
+    # https://stackoverflow.com/questions/16854280/a-variable-modified-inside-a-while-loop-is-not-remembered
+    done <<< "$(cat "$script" | grep '#!nix-flake-shell' | sed 's;[^ ]* \([^$]\);\1;')"
+
+    shellArgs+=("$interpreter")
+    shellArgs+=("$script")
+    while [ $# -gt 0 ]; do
         shellArgs+=("$1")
-    fi
-    shift
-done
+        shift
+    done
+    echo interpreter: $interpreter
+
+else
+    parseShellArgs=0
+    while [ $# -gt 0 ]; do
+        if [ "$1" == "--" ]; then
+            parseShellArgs=1
+            shift
+            continue
+        fi
+        if [ "$parseShellArgs" == 0 ]; then
+            echo "$1" >> $packageList
+        else
+            shellArgs+=("$1")
+        fi
+        shift
+    done
+fi
 
 echo $packageList
 echo "with (builtins.getFlake \"$SCRIPT_DIR\");" >> $packageList.nix
@@ -31,5 +55,7 @@ cat << EOF >> $packageList.nix
 mkWrapper (builtins.filter (x: builtins.typeOf x == "string" && x != "") (builtins.split "\n" (builtins.readFile "$packageList")))
 EOF
 
-wrapper="$(nix-build $packageList.nix --no-out-link)" && $wrapper "${shellArgs[@]}"
+echo args: ${shellArgs[@]}
+wrapper="$(nix-build $packageList.nix -v --no-out-link)" && $wrapper "${shellArgs[@]}"
 
+echo fim
