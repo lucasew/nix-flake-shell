@@ -6,16 +6,21 @@ shellArgs=()
 
 packageList=$(mktemp)
 
+function echo_debug {
+    if [ -v NIX_DEBUG ]; then
+        echo "$@" >&2
+    fi
+}
+
 interpreter=bash # by default in shebang mode
 if [ $# -gt 0 ] && [ -x "$1" ]; then
     script="$1"; shift
-    echo shebang mode
+    echo_debug shebang mode >&2
 
     while read line; do
-        echo line: $line
+        echo_debug hashbang line: $line
         if [ "${line:0:7}" == "prefix=" ]; then
             interpreter="${line:7}"
-            echo interpreter alterado: $interpreter
             continue
         fi
         echo $line >> $packageList
@@ -28,7 +33,7 @@ if [ $# -gt 0 ] && [ -x "$1" ]; then
         shellArgs+=("$1")
         shift
     done
-    echo interpreter: $interpreter
+    echo_debug interpreter: $interpreter
 
 else
     parseShellArgs=0
@@ -47,7 +52,8 @@ else
     done
 fi
 
-echo $packageList
+echo_debug temporary location: $packageList
+
 echo "with (builtins.getFlake \"$SCRIPT_DIR\");" >> $packageList.nix
 echo 'with lib.${builtins.currentSystem};' >> $packageList.nix
 
@@ -55,7 +61,14 @@ cat << EOF >> $packageList.nix
 mkWrapper (builtins.filter (x: builtins.typeOf x == "string" && x != "") (builtins.split "\n" (builtins.readFile "$packageList")))
 EOF
 
-echo args: ${shellArgs[@]}
-wrapper="$(nix-build $packageList.nix -v --no-out-link)" && $wrapper "${shellArgs[@]}"
+echo_debug args: ${shellArgs[@]}
 
-echo fim
+nixArgs=()
+nixArgs+=(--no-out-link)
+
+if [ -v NIX_DEBUG ]; then
+    nixArgs+=(-v)
+fi
+wrapper="$(nix-build $packageList.nix ${nixArgs[@]})" && $wrapper "${shellArgs[@]}"
+
+echo_debug end

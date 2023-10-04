@@ -1,4 +1,4 @@
-#!/usr/bin/env nix -S run path:.
+#!/usr/bin/env -S nix run path:.
 #!nix-flake-shell prefix=python
 #!nix-flake-shell nixpkgs.python3Packages.numpy
 #!nix-flake-shell nixpkgs.python3Packages.matplotlib
