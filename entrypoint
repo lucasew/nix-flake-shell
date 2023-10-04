@@ -27,8 +27,13 @@ if [ $# -gt 0 ] && [ -x "$1" ]; then
     # https://stackoverflow.com/questions/16854280/a-variable-modified-inside-a-while-loop-is-not-remembered
     done <<< "$(cat "$script" | grep '#!nix-flake-shell' | sed 's;[^ ]* \([^$]\);\1;')"
 
-    shellArgs+=("$interpreter")
+    read -ra interpreterTokens <<< "$interpreter"
+    for interpreterToken in "${interpreterTokens[@]}"; do
+        shellArgs+=("$interpreterToken")
+    done
+
     shellArgs+=("$script")
+
     while [ $# -gt 0 ]; do
         shellArgs+=("$1")
         shift
