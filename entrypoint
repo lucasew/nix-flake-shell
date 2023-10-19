@@ -4,7 +4,10 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 shellArgs=()
 
-packageList=$(mktemp)
+tmpdir=$(mktemp -u)
+_tmprand=${tmpdir##*/}
+tmpdir=${tmpdir%/[^$]*}/nix-flake-shell/$_tmprand
+mkdir -p $tmpdir
 
 function echo_debug {
     if [ -v NIX_DEBUG ]; then
@@ -12,7 +15,16 @@ function echo_debug {
     fi
 }
 
+function cleanup {
+    if [ ! -v NIX_DEBUG ]; then
+        rm $tmpdir -rf
+    fi
+}
+
 interpreter=bash # by default in shebang mode
+
+touch $tmpdir/list.txt
+
 if [ $# -gt 0 ] && [ -x "$1" ]; then
     script="$1"; shift
     echo_debug shebang mode >&2
@@ -23,7 +35,7 @@ if [ $# -gt 0 ] && [ -x "$1" ]; then
             interpreter="${line:7}"
             continue
         fi
-        echo $line >> $packageList
+        echo $line >> $tmpdir/list.txt
     # https://stackoverflow.com/questions/16854280/a-variable-modified-inside-a-while-loop-is-not-remembered
     done <<< "$(cat "$script" | grep '#!nix-flake-shell' | sed 's;[^ ]* \([^$]\);\1;')"
 
@@ -49,7 +61,7 @@ else
             continue
         fi
         if [ "$parseShellArgs" == 0 ]; then
-            echo "$1" >> $packageList
+            echo "$1" >> $tmpdir/list.txt
         else
             shellArgs+=("$1")
         fi
@@ -57,23 +69,28 @@ else
     done
 fi
 
-echo_debug temporary location: $packageList
+echo_debug temporary location: $tmpdir
 
-echo "with (builtins.getFlake \"$SCRIPT_DIR\");" >> $packageList.nix
-echo 'with lib.${builtins.currentSystem};' >> $packageList.nix
+echo "with (builtins.getFlake \"$SCRIPT_DIR\");" >> $tmpdir/default.nix
+echo 'with lib.${builtins.currentSystem};' >> $tmpdir/default.nix
 
-cat << EOF >> $packageList.nix
-mkWrapper (builtins.filter (x: builtins.typeOf x == "string" && x != "") (builtins.split "\n" (builtins.readFile "$packageList")))
+cat << EOF >> $tmpdir/default.nix
+mkWrapper (builtins.filter (x: builtins.typeOf x == "string" && x != "") (builtins.split "\n" (builtins.readFile "$tmpdir/list.txt")))
 EOF
 
 echo_debug args: ${shellArgs[@]}
 
 nixArgs=()
-nixArgs+=(--no-out-link)
 
 if [ -v NIX_DEBUG ]; then
     nixArgs+=(-v)
+else
+    trap cleanup EXIT
 fi
-wrapper="$(nix-build $packageList.nix ${nixArgs[@]})" && $wrapper "${shellArgs[@]}"
+
+nix-build $tmpdir/default.nix ${nixArgs[@]} --out-link $tmpdir/result
+
+$tmpdir/result "${shellArgs[@]}"
 
 echo_debug end
+echo_debug intermediate files can be found out in $tmpdir
