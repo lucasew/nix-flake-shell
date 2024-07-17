@@ -79,6 +79,9 @@ let
     };
     name = evaluated.name or "hashbang-script";
     packages = map (p: deref evaluated'.input (lib.splitString "." p)) evaluated.packages;
+    prelude = builtins.concatStringsSep "\n" ([ evaluated.prelude ]
+      ++ (builtins.attrValues (builtins.mapAttrs (k: v: "export INPUT_${k}=\"${v}\"") (builtins.removeAttrs evaluated'.input ["nixpkgs_bootstrap" "flake-utils_bootstrap"])))
+    );
   };
 
   metadata = {
