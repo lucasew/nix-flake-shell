@@ -32,7 +32,7 @@ let
             then throw "Name is being provided more than once"
             else parsed.args;
         };
-        input = {
+        flake = {
           input = prev.input // {
             "${parsed'.command}" =
               if builtins.hasAttr parsed'.command prev.input

@@ -3,7 +3,7 @@
 #!nix-flake-shell prefix python
 #!nix-flake-shell package nixpkgs.python3Packages.numpy
 #!nix-flake-shell package nixpkgs.python3Packages.matplotlib
-#!nix-flake-shell input lib github:nix-community/nixpkgs.lib
+#!nix-flake-shell flake lib github:nix-community/nixpkgs.lib
 #!nix-flake-shell prelude echo prelude works!
 #! vim:ft=python
 
