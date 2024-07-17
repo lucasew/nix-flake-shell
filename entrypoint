@@ -12,6 +12,10 @@ function is_debug_mode {
     [ -v NIX_DEBUG ] || [ -v NFS_VERBOSE ]
 }
 
+if is_debug_mode; then
+    export NIX_DEBUG NFS_VERBOSE
+fi
+
 function echo_debug {
     if is_debug_mode; then
         echo "$@" >&2
@@ -29,6 +33,7 @@ echo_debug temp result: $tmpfile
     printf 'lib.${builtins.currentSystem}.mkWrapper "%s"' "$(realpath "$SCRIPT")"
 } | nix build -f - -o $tmpfile ${nixArgs[@]}
 
+echo_debug run "$tmpfile" "$SCRIPT" "$@"
 "$tmpfile" "$SCRIPT" "$@"
 
 function cleanup {

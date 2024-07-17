@@ -4,19 +4,24 @@
 args:
 
 let
+  trace_it = v: builtins.trace v v;
   pkgs = import flake.inputs.nixpkgs_bootstrap { inherit system; };
   inherit (pkgs) lib;
 
   scriptText = lib.readFile args;
   scriptLines = lib.splitString "\n" scriptText;
-  scriptInterestLines = lib.filter (l: !(builtins.isNull (builtins.match "[\/ ]*#!nix-flake-shell[^$]*$" l))) scriptLines;
+  scriptInterestLines = lib.filter (l: !(builtins.isNull (builtins.match "[\/ ]*#!nix-flake-shell .*" l))) scriptLines;
 
-  scriptDirectives = map (l: builtins.head (builtins.match ".*!nix-flake-shell ([^$]*)" l)) scriptInterestLines;
+  scriptDirectives = map (l: builtins.head (builtins.match "[\/ ]*#!nix-flake-shell *(.*)" l)) scriptInterestLines;
 
   parseDirective = directive:
     let
-      parts = builtins.match "([a-z]*) ([^$]*)" directive;
-    in {
+      parts = builtins.match "([a-zA-Z0-9_]*) (.*)" directive;
+      invalidDirective = builtins.abort "Invalid directive: ${directive}";
+    in if parts == null then {
+      command = invalidDirective;
+      args = invalidDirective;
+    } else {
       command = lib.head parts;
       args = lib.head (lib.tail parts);
     };
@@ -62,10 +67,10 @@ let
 
                 argReducer = arg: prev: 
                 let
-                  parts = builtins.match "([a-zA-Z]*)=([^$]*)" arg;
+                  parts = builtins.match "([a-zA-Z\\_]*)=([^$]*)" arg;
                   key = lib.head parts;
                   value = lib.head (lib.tail parts);
-                in if parts == null then prev else prev // {
+                in if parts == null then abort "fetch/${parsed'.command}: Invalid key/value item near '${arg}'" else prev // {
                   ${key} = value;
                 };
               in builtins.trace fetcher (fetcher (lib.foldr (argReducer) {} argsStmts));
@@ -99,8 +104,10 @@ let
     };
     name = evaluated.name or "hashbang-script";
     packages = map (p: deref evaluated'.input (lib.splitString "." p)) evaluated.packages;
-    prelude = builtins.concatStringsSep "\n" ([ evaluated.prelude ]
+    prelude = (builtins.concatStringsSep "\n" ([]
       ++ (builtins.attrValues (builtins.mapAttrs (k: v: "export INPUT_${k}=\"${v}\"") (builtins.removeAttrs evaluated'.input ["nixpkgs_bootstrap" "flake-utils_bootstrap"])))
+      ++ [evaluated.prelude]
+    )
     );
   };
 
@@ -121,18 +128,16 @@ let
     drv = {
       inherit (evaluated') packages;
     };
-    inherit (evaluated') prelude;
-    passthru = {evaluated = evaluated';};
+    prelude = ''
+      ${evaluated'.prelude}
+      exec ${evaluated'.prefix or (throw "Missing prefix directive. Where this script will be run?")} "$@"
+    '';
+    passthru = {
+      evaluated = evaluated';
+      inherit metadata;
+      inherit metadataJSON;
+    };
   };
+# in metadataJSON
 
-  hashbangScript = pkgs.writeShellScript evaluated'.name ''
-    ${entrypointScript} ${evaluated'.prefix} "$@"
-  '';
-
-in hashbangScript.overrideAttrs (old: {
-  passthru = (old.passthru or {}) // {
-    evaluated = evaluated';
-    inherit metadata;
-    inherit metadataJSON;
-  };
-})
+in entrypointScript

@@ -93,6 +93,9 @@ let
     unset NIX_ENFORCE_PURITY
     shopt -u nullglob
     shopt -s execfail
+    if [ -v NIX_DEBUG ]; then
+      echo command: $@
+    fi
     ${prelude}
 
     if [[ "${"$"}{BASH_SOURCE[0]}" == "${"$"}{0}" ]]; then
