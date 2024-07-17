@@ -73,7 +73,7 @@ let
                 in if parts == null then abort "fetch/${parsed'.command}: Invalid key/value item near '${arg}'" else prev // {
                   ${key} = value;
                 };
-              in builtins.trace fetcher (fetcher (lib.foldr (argReducer) {} argsStmts));
+              in fetcher (lib.foldr (argReducer) {} argsStmts);
           };
         };
       };
