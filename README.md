@@ -1,11 +1,7 @@
 # nix-flake-shell
 
-Like nix-shell, but for flakes.
+![](https://i.imgflip.com/3pc6e0.jpg)
 
-Example:
+Like the nix-shell hashbang, but for flakes.
 
-```bash
-nix run github:lucasew/nix-flake-shell -- nixpkgs=nixpkgs/release-23.05 nixpkgs.python3Packages.{numpy,pandas,jupyter} -- jupyter notebook
-```
-
-Using this app as hashbang is also supported! See the `tests` folder for examples!
+See the `tests` folder for examples!

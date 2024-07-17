@@ -25,6 +25,7 @@ let
     let
       parsed = if builtins.isString directive then parseDirective directive else directive;
       parsed' = parseDirective parsed.args;
+      parsed'' = parseDirective parsed'.args;
       resultMap = {
         name = {
           name = if builtins.hasAttr "name" prev
@@ -50,6 +51,25 @@ let
         };
         package = {
           packages = prev.packages ++ [ parsed.args ];
+        };
+        fetch = {
+          input = prev.input // {
+            "${parsed'.command}" = if builtins.hasAttr parsed'.command prev.input
+              then throw "Input ${parsed'.command} is being provided more than once"
+              else let
+                fetcher = deref pkgs (lib.splitString "." parsed''.command);
+                argsStmts = lib.splitString " " parsed''.args;
+
+                argReducer = arg: prev: 
+                let
+                  parts = builtins.match "([a-zA-Z]*)=([^$]*)" arg;
+                  key = lib.head parts;
+                  value = lib.head (lib.tail parts);
+                in if parts == null then prev else prev // {
+                  ${key} = value;
+                };
+              in builtins.trace fetcher (fetcher (lib.foldr (argReducer) {} argsStmts));
+          };
         };
       };
 

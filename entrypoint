@@ -2,6 +2,12 @@
 
 set -eu
 
+nixArgs=()
+
+if [ -v NIX_SHOW_TRACE ]; then
+    nixArgs+=(--show-trace)
+fi
+
 function is_debug_mode {
     [ -v NIX_DEBUG ] || [ -v NFS_VERBOSE ]
 }
@@ -21,7 +27,7 @@ echo_debug temp result: $tmpfile
 {
     echo "with (builtins.getFlake \"$SCRIPT_DIR\");"
     printf 'lib.${builtins.currentSystem}.mkWrapper "%s"' "$(realpath "$SCRIPT")"
-} | nix build -f - -o $tmpfile
+} | nix build -f - -o $tmpfile ${nixArgs[@]}
 
 "$tmpfile" "$SCRIPT" "$@"
 
