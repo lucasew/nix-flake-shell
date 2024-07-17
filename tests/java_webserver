@@ -1,0 +1,37 @@
+#!/usr/bin/env -S nix run path:.
+// #!nix-flake-shell prefix java --source 11 -classpath $INPUT_nanohttpd_jar:$INPUT_log4j_jar
+// #!nix-flake-shell package nixpkgs.openjdk
+// #!nix-flake-shell fetch log4j_jar fetchurl url=https://repo1.maven.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17.jar hash=sha256-HTFpZEVpdyBScJF1Q2kIKmZRvUl4G2AF3rlOVnU0Bvk=
+// #!nix-flake-shell fetch nanohttpd_jar fetchurl url=https://repo1.maven.org/maven2/org/nanohttpd/nanohttpd/2.3.1/nanohttpd-2.3.1.jar hash=sha256-3oZMR4GBVxQaJMmss23wxH178Vt/9IyQYQ8+tOXfDlg=
+
+import java.io.IOException;
+import org.apache.log4j.Logger;
+import org.apache.log4j.BasicConfigurator;
+import fi.iki.elonen.NanoHTTPD;
+
+public class main {
+  final static Logger logger = Logger.getLogger(main.class);
+
+  public static void main(String []args) throws IOException {
+    BasicConfigurator.configure();
+    logger.info("Problem?");
+
+    Server server = new Server(42069);
+    logger.info("Listening on http://localhost:42069");
+    server.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
+  }
+}
+
+class Server extends NanoHTTPD {
+  final static Logger logger = Logger.getLogger(main.class);
+
+  public Server(int port) {
+    super(port);
+  }
+
+  @Override
+  public Response serve(IHTTPSession session) {
+      logger.info("Got request");
+      return newFixedLengthResponse("<img src=\"https://upload.wikimedia.org/wikipedia/pt/thumb/7/73/Trollface.png/220px-Trollface.png\" alt=\"trollface\"><h1>Problem?</h1>");
+  }
+}
