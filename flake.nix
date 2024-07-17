@@ -1,13 +1,13 @@
 {
   description = "nix-shell, but for flakes";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs_bootstrap.url = "github:nixos/nixpkgs";
 
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils_bootstrap.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, flake-utils, ... }:
-  flake-utils.lib.eachDefaultSystem (system: {
+  outputs = { self, flake-utils_bootstrap, ... }:
+  flake-utils_bootstrap.lib.eachDefaultSystem (system: {
       lib = {
         mkWrapper = import ./mkWrapper.nix {
           flake = self;

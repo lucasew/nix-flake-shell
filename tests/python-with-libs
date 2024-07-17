@@ -1,8 +1,8 @@
 #!/usr/bin/env -S nix run path:.
-#!nix-flake-shell prefix=python
-#!nix-flake-shell nixpkgs.python3Packages.numpy
-#!nix-flake-shell nixpkgs.python3Packages.matplotlib
-#!nix-flake-shell lib=github:nixos/nixpkgs.lib
+#!nix-flake-shell prefix python
+#!nix-flake-shell package nixpkgs.python3Packages.numpy
+#!nix-flake-shell package nixpkgs.python3Packages.matplotlib
+#!nix-flake-shell input lib github:nix-community/nixpkgs.lib
 #! vim:ft=python
 
 import numpy as np

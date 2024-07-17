@@ -1,97 +1,33 @@
 #!/usr/bin/env bash
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+set -eu
 
-shellArgs=()
-
-tmpdir=$(mktemp -u)
-_tmprand=${tmpdir##*/}
-tmpdir=${tmpdir%/[^$]*}/nix-flake-shell/$_tmprand
-mkdir -p $tmpdir
+function is_debug_mode {
+    [ -v NIX_DEBUG ] || [ -v NFS_VERBOSE ]
+}
 
 function echo_debug {
-    if [ -v NIX_DEBUG ] || [ -v NFS_VERBOSE ]; then
+    if is_debug_mode; then
         echo "$@" >&2
     fi
 }
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT="$1"; shift
+
+tmpfile=$(mktemp --dry-run)
+echo_debug temp result: $tmpfile
+
+{
+    echo "with (builtins.getFlake \"$SCRIPT_DIR\");"
+    printf 'lib.${builtins.currentSystem}.mkWrapper "%s"' "$(realpath "$SCRIPT")"
+} | nix build -f - -o $tmpfile
+
+"$tmpfile" "$SCRIPT" "$@"
+
 function cleanup {
-    if [ ! -v NIX_DEBUG ]; then
-        rm $tmpdir -rf
-        echo_debug Deleting intermediate temporary files in $tmpdir. Set NIX_DEBUG to keep.
-    fi
+    is_debug_mode || rm $tmpfile
 }
 
-interpreter=bash # by default in shebang mode
+trap cleanup EXIT
 
-touch $tmpdir/list.txt
-
-if [ $# -gt 0 ] && [ -x "$1" ]; then
-    script="$1"; shift
-    echo_debug shebang mode >&2
-
-    while read line; do
-        echo_debug hashbang line: $line
-        if [ "${line:0:7}" == "prefix=" ]; then
-            interpreter="${line:7}"
-            continue
-        fi
-        echo $line >> $tmpdir/list.txt
-    # https://stackoverflow.com/questions/16854280/a-variable-modified-inside-a-while-loop-is-not-remembered
-    done <<< "$(cat "$script" | grep '#!nix-flake-shell' | sed 's;[^ ]* \([^$]\);\1;')"
-
-    read -ra interpreterTokens <<< "$interpreter"
-    for interpreterToken in "${interpreterTokens[@]}"; do
-        shellArgs+=("$interpreterToken")
-    done
-
-    shellArgs+=("$script")
-
-    while [ $# -gt 0 ]; do
-        shellArgs+=("$1")
-        shift
-    done
-    echo_debug interpreter: $interpreter
-
-else
-    parseShellArgs=0
-    while [ $# -gt 0 ]; do
-        if [ "$1" == "--" ]; then
-            parseShellArgs=1
-            shift
-            continue
-        fi
-        if [ "$parseShellArgs" == 0 ]; then
-            echo "$1" >> $tmpdir/list.txt
-        else
-            shellArgs+=("$1")
-        fi
-        shift
-    done
-fi
-
-echo_debug temporary location: $tmpdir
-
-echo "with (builtins.getFlake \"$SCRIPT_DIR\");" >> $tmpdir/default.nix
-echo 'with lib.${builtins.currentSystem};' >> $tmpdir/default.nix
-
-cat << EOF >> $tmpdir/default.nix
-mkWrapper (builtins.filter (x: builtins.typeOf x == "string" && x != "") (builtins.split "\n" (builtins.readFile "$tmpdir/list.txt")))
-EOF
-
-echo_debug args: ${shellArgs[@]}
-
-nixArgs=()
-
-if [ -v NIX_DEBUG ]; then
-    nixArgs+=(-v)
-else
-    trap cleanup EXIT
-fi
-
-nix-build $tmpdir/default.nix ${nixArgs[@]} --out-link $tmpdir/result
-
-$tmpdir/result "${shellArgs[@]}"
-
-echo_debug end
-echo_debug intermediate files can be found out in $tmpdir

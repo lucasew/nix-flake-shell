@@ -17,6 +17,7 @@
   prelude ? ""
 , # Name for the script derivation
   name ? null
+, passthru ? {}
 , ...
 }:
 
@@ -101,6 +102,6 @@ let
 in entrypointScript.overrideAttrs (old: {
   passthru = ((shellDrv.passthru or {}) // {
     inherit shellDrv;
-  });
+  } // passthru);
   meta = (shellDrv.meta or {});
 })
