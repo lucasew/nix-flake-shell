@@ -49,7 +49,7 @@ let
             else parsed.args;
         };
         package = {
-          package = (prev.package or []) ++ [ parsed.args ];
+          packages = prev.packages ++ [ parsed.args ];
         };
       };
 
@@ -61,6 +61,7 @@ let
   evalInitialState = {
     input = flake.inputs;
     prelude = "";
+    packages = [];
   };
 
   evaluated = lib.foldr (evalDirective) evalInitialState scriptDirectives;
@@ -77,7 +78,7 @@ let
       nixpkgs = evaluated.input.nixpkgs or evaluated.input.nixpkgs_bootstrap;
     };
     name = evaluated.name or "hashbang-script";
-    package = map (p: deref evaluated'.input (lib.splitString "." p)) evaluated.package;
+    packages = map (p: deref evaluated'.input (lib.splitString "." p)) evaluated.packages;
   };
 
   metadata = {
@@ -95,7 +96,7 @@ let
 
   entrypointScript = mkShellWrapper {
     drv = {
-      packages = evaluated'.package;
+      inherit (evaluated') packages;
     };
     inherit (evaluated') prelude;
     passthru = {evaluated = evaluated';};
