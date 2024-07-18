@@ -1,0 +1,41 @@
+#!/usr/bin/env -S nix run path:. --
+
+(*
+#!nix-flake-shell package nixpkgs.ocamlPackages.utop
+#!nix-flake-shell prefix utop
+#!vim:ft=ocaml
+*)
+
+(*
+#!nix-flake-shell package nixpkgs.ocamlPackages.opium
+*)
+#require "opium";;
+open Opium
+
+
+let problem_view =
+	let open Tyxml.Html in
+		html
+	    ~a:[ a_lang "en" ]
+	    (head
+	       (title (txt "Problem?"))
+	       [ meta ~a:[ a_charset "utf-8" ] ()
+	       ; meta ~a:[ a_name "viewport"; a_content "width=device-width, initial-scale=1" ] ()
+	       ; meta ~a:[ a_name "theme-color"; a_content "#ffffff" ] ()
+	       ])
+	    (body [ img ~alt:"a" ~src:"https://upload.wikimedia.org/wikipedia/pt/thumb/7/73/Trollface.png/220px-Trollface.png" ()
+						; h1 [txt "Problem?"]
+	    ])
+;;
+
+
+let problem_handler req = 
+	problem_view
+	|> Response.of_html
+	|> Lwt.return
+
+let _ =
+	App.empty
+	|> App.get "/" problem_handler
+	|> App.port 42069
+	|> App.run_command
