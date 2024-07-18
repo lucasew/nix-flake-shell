@@ -30,11 +30,20 @@ echo_debug temp result: $tmpfile
 
 {
     echo "with (builtins.getFlake \"$SCRIPT_DIR\");"
-    printf 'lib.${builtins.currentSystem}.mkWrapper "%s"' "$(realpath "$SCRIPT")"
+    printf 'let wrapper = lib.${builtins.currentSystem}.mkWrapper "%s";' "$(realpath "$SCRIPT")"
+    if is_debug_mode; then
+        echo "in wrapper.metadataJSON"
+    else
+        echo "in wrapper"
+    fi
 } | nix build -f - -o $tmpfile ${nixArgs[@]}
 
 echo_debug run "$tmpfile" "$SCRIPT" "$@"
-"$tmpfile" "$SCRIPT" "$@"
+if is_debug_mode; then
+    cat $tmpfile | jq
+else
+    "$tmpfile" "$SCRIPT" "$@"
+fi
 
 function cleanup {
     is_debug_mode || rm $tmpfile
