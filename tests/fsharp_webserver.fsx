@@ -1,17 +1,20 @@
 #!/usr/bin/env -S nix run path:. --
-// #!nix-flake-shell package nixpkgs.fsharp
-// #!nix-flake-shell prefix fsharpi 
+// #!nix-flake-shell package nixpkgs.dotnetCorePackages.sdk_9_0
+// #!nix-flake-shell prefix dotnet fsi
 // #! vim:ft=fsharp
 
 open System
 
-// Introduced in F# 5 -- https://stackoverflow.com/questions/66415290/where-to-keep-nuget-packages-for-fsi-scripts-f
-// Blocker because nixpkgs right now has only F# 4 available
-// Local works tho
-// TODO: test properly after bump
-#r "nuget: Saturn"
+// Framework references are not supported: https://github.com/dotnet/fsharp/issues/9417
+
+#r "nuget: Microsoft.AspNetCore.Http.Abstractions";;
+#r "nuget: Microsoft.AspNetCore.Hosting.Abstractions";;
+#r "nuget: Microsoft.AspNetCore.Hosting";;
+
+#r "nuget: Saturn";;
 open Saturn
 
+#r "nuget: Giraffe";;
 open Giraffe
 
 let optionalize x =
@@ -32,18 +35,19 @@ let port = getEnvOr "PORT" "42069"
 
 let host = sprintf "http://0.0.0.0:%s/" port
 
-let problemRoute ctx =
-    "<img src=\"https://upload.wikimedia.org/wikipedia/pt/thumb/7/73/Trollface.png/220px-Trollface.png\" alt=\"trollface\"><h1>Problem?</h1>"
-    |> htmlString
-    |> Response.ok ctx
+// let problemRoute (ctx) =
+//     "<img src=\"https://upload.wikimedia.org/wikipedia/pt/thumb/7/73/Trollface.png/220px-Trollface.png\" alt=\"trollface\"><h1>Problem?</h1>"
+//     |> htmlString
+//     |> Response.ok ctx
 
-let rootRouter = router {
-    getf "/" problemRoute
-}
+// let app = application {
+//     use_router problemRoute
+// }
+
+// run app
 
 let app = application {
-    use_router rootRouter
-    url host
+    use_router (text "Hello World from Saturn")
 }
 
 printfn "Listening on http://localhost:42069"
