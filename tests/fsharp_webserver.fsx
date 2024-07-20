@@ -4,18 +4,11 @@
 // #! vim:ft=fsharp
 
 open System
+open System.Net.Sockets
+open System.Net
+open System.Text
 
 // Framework references are not supported: https://github.com/dotnet/fsharp/issues/9417
-
-#r "nuget: Microsoft.AspNetCore.Http.Abstractions";;
-#r "nuget: Microsoft.AspNetCore.Hosting.Abstractions";;
-#r "nuget: Microsoft.AspNetCore.Hosting";;
-
-#r "nuget: Saturn";;
-open Saturn
-
-#r "nuget: Giraffe";;
-open Giraffe
 
 let optionalize x =
     if (isNull x) then
@@ -32,23 +25,29 @@ let getEnvOr key fallback =
     | None -> fallback
 
 let port = getEnvOr "PORT" "42069"
+let host = "0.0.0.0"
 
-let host = sprintf "http://0.0.0.0:%s/" port
+let htmlData = "<img src=\"https://upload.wikimedia.org/wikipedia/pt/thumb/7/73/Trollface.png/220px-Trollface.png\" alt=\"trollface\"><h1>Problem?</h1>" 
+let response = Encoding.ASCII.GetBytes($"HTTP/1.0 200 OK
+Server: Baguncinha efesharpe
+Content-Type: text-html; charset=utf-8
 
-// let problemRoute (ctx) =
-//     "<img src=\"https://upload.wikimedia.org/wikipedia/pt/thumb/7/73/Trollface.png/220px-Trollface.png\" alt=\"trollface\"><h1>Problem?</h1>"
-//     |> htmlString
-//     |> Response.ok ctx
+{htmlData}")
 
-// let app = application {
-//     use_router problemRoute
-// }
 
-// run app
-
-let app = application {
-    use_router (text "Hello World from Saturn")
-}
-
+let server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+server.Bind(IPEndPoint.Parse($"{host}:{port}"))
 printfn "Listening on http://localhost:42069"
-run app
+server.Listen(100)
+
+let BUFFER_SIZE = 4096
+let buffer = Array.zeroCreate BUFFER_SIZE
+
+while true do
+    let socket = server.Accept()
+    printfn "Accept"
+    let readSize = socket.Receive(buffer, 0, BUFFER_SIZE, SocketFlags.None) // read all the request discarding it
+    printfn $"read {readSize} {Encoding.ASCII.GetString(buffer)}"
+    socket.Send(response, response.Length, SocketFlags.None)
+    socket.Close()
+
