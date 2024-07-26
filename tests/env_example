@@ -1,6 +1,6 @@
 #!/usr/bin/env -S nix run path:.
 #!nix-flake-shell prefix bash
 #!nix-flake-shell fetch favicon fetchurl url=https://www.google.com/favicon.ico hash=sha256-baViCIAVljQhPhl/r8od3gJyFTvj5FkIGFM/q40EB3A=
-#! vim:ft=bash
+# vim:ft=bash
 
 env

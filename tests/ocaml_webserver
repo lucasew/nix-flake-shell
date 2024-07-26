@@ -1,9 +1,11 @@
 #!/usr/bin/env -S nix run path:. --
 
+(* vim:ft=ocaml
+*)
+
 (*
 #!nix-flake-shell package nixpkgs.ocamlPackages.utop
 #!nix-flake-shell prefix utop
-#!vim:ft=ocaml
 *)
 
 (*

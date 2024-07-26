@@ -3,6 +3,8 @@
 // #!nix-flake-shell prefix dotnet fsi
 // #! vim:ft=fsharp
 
+// NOTE: syntax highlight not available in stock Vim
+
 open System
 open System.Net.Sockets
 open System.Net

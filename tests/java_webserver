@@ -3,6 +3,7 @@
 // #!nix-flake-shell package nixpkgs.openjdk
 // #!nix-flake-shell fetch log4j_jar fetchurl url=https://repo1.maven.org/maven2/log4j/log4j/1.2.17/log4j-1.2.17.jar hash=sha256-HTFpZEVpdyBScJF1Q2kIKmZRvUl4G2AF3rlOVnU0Bvk=
 // #!nix-flake-shell fetch nanohttpd_jar fetchurl url=https://repo1.maven.org/maven2/org/nanohttpd/nanohttpd/2.3.1/nanohttpd-2.3.1.jar hash=sha256-3oZMR4GBVxQaJMmss23wxH178Vt/9IyQYQ8+tOXfDlg=
+// vim:ft=java
 
 import java.io.IOException;
 import org.apache.log4j.Logger;
