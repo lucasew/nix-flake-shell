@@ -1,0 +1,45 @@
+[tools]
+"github:lucasew/workspaced" = "0.2.1"
+
+[tasks.lint]
+run = "workspaced codebase lint"
+
+[tasks.fmt]
+run = "workspaced codebase format"
+
+[tasks.test]
+depends = ["test:*"]
+
+[tasks."test:noop"]
+run = "true"
+
+[tasks.codegen]
+depends = ["codegen:*"]
+
+[tasks."codegen:noop"]
+run = "true"
+
+[tasks.install]
+depends = ["install:*"]
+
+[tasks."install:detect"]
+run = """
+if [ -f "package-lock.json" ]; then
+    npm ci
+elif [ -f "yarn.lock" ]; then
+    yarn install --frozen-lockfile
+elif [ -f "pnpm-lock.yaml" ]; then
+    pnpm install --frozen-lockfile
+elif [ -f "Cargo.lock" ]; then
+    cargo fetch
+elif [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+elif [ -f "go.mod" ]; then
+    go mod download
+else
+    echo "No recognized package manager file found. Skipping install."
+fi
+"""
+
+[tasks.ci]
+depends = ["lint", "test"]
