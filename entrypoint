@@ -25,9 +25,7 @@ function echo_debug {
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 SCRIPT="$1"; shift
 
-tmpfile=$(mktemp)
-echo_debug temp result: $tmpfile
-
+store_path=$(
 {
     echo "with (builtins.getFlake \"$SCRIPT_DIR\");"
     printf 'let wrapper = lib.${builtins.currentSystem}.mkWrapper "%s";' "$(realpath "$SCRIPT")"
@@ -36,18 +34,13 @@ echo_debug temp result: $tmpfile
     else
         echo "in wrapper"
     fi
-} | nix build -f - -o $tmpfile ${nixArgs[@]}
+} | nix build -f - --no-link --print-out-paths ${nixArgs[@]}
+)
 
-echo_debug run "$tmpfile" "$SCRIPT" "$@"
+echo_debug run "$store_path" "$SCRIPT" "$@"
 if is_debug_mode; then
-    cat $tmpfile | jq
+    cat "$store_path" | jq
 else
-    "$tmpfile" "$SCRIPT" "$@"
+    "$store_path" "$SCRIPT" "$@"
 fi
-
-function cleanup {
-    is_debug_mode || rm -f $tmpfile
-}
-
-trap cleanup EXIT
 
