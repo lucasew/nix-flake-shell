@@ -37,7 +37,7 @@ echo_debug temp result: "$tmpfile"
     else
         echo "in wrapper"
     fi
-} | nix build -f - -o "$tmpfile" "${nixArgs[@]}"
+} | nix build -f - -o "$tmpfile" ${nixArgs[@]}
 
 echo_debug run "$tmpfile" "$SCRIPT" "$@"
 if is_debug_mode; then
