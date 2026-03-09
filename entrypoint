@@ -26,7 +26,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 SCRIPT="$1"; shift
 
 tmpfile=$(mktemp --dry-run)
-echo_debug temp result: "$tmpfile"
+echo_debug temp result: $tmpfile
 
 {
     echo "with (builtins.getFlake \"$SCRIPT_DIR\");"
@@ -36,17 +36,17 @@ echo_debug temp result: "$tmpfile"
     else
         echo "in wrapper"
     fi
-} | nix build -f - -o "$tmpfile" ${nixArgs[@]}
+} | nix build -f - -o $tmpfile ${nixArgs[@]}
 
 echo_debug run "$tmpfile" "$SCRIPT" "$@"
 if is_debug_mode; then
-    cat "$tmpfile" | jq
+    cat $tmpfile | jq
 else
     "$tmpfile" "$SCRIPT" "$@"
 fi
 
 function cleanup {
-    is_debug_mode || rm -f "$tmpfile"
+    is_debug_mode || rm $tmpfile
 }
 
 trap cleanup EXIT

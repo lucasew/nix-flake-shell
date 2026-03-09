@@ -1,1 +1,1 @@
-- 2025-02-12: [High] Arbitrary file deletion and command injection via unquoted variables (e.g., $tmpfile) leading to word splitting.
+- 2025-02-12: [Critical] Development servers binding to wildcard address (0.0.0.0) exposing them to the local network. Spot it by looking for port-only bindings.
