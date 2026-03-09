@@ -1,0 +1,1 @@
+- 2025-02-12: [High] Insecure temporary file creation using mktemp --dry-run or -u flags.
