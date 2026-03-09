@@ -1,1 +1,1 @@
-- 2025-02-12: [High] Insecure temporary file creation using mktemp --dry-run or -u flags.
+- 2025-02-12: [High] Arbitrary file deletion and command injection via unquoted variables (e.g., $tmpfile) leading to word splitting.
